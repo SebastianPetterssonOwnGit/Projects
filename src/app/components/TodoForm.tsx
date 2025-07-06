@@ -12,7 +12,6 @@ type Props = {
 export default function TodoFrom({ onSubmit, onClose }: Props) {
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(10);
-  const [noTimeLimit, setNoTimeLimit] = useState(false);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
