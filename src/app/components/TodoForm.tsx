@@ -1,34 +1,33 @@
-'use client'
+"use client";
 
 import React, { useState } from "react";
 import { Todo } from "../types/todo";
 import { v4 as uuidv4 } from "uuid";
 
-
 type Props = {
-    onSubmit: (todo: Todo) => void;
-    onClose: () => void;
+  onSubmit: (todo: Todo) => void;
+  onClose: () => void;
 };
 
 export default function TodoFrom({ onSubmit, onClose }: Props) {
-    const [title, setTitle] = useState("");
-    const [duration, setDuration] = useState(10);
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState(10);
 
-    const handleSubmit = () => {
-        if(!title.trim()) return;
-        const newTodo: Todo = {
-            id: uuidv4(),
-            title, 
-            createdAt: Date.now(),
-            durationMinutes: duration,
-            completed: false,
-        };
-        onSubmit(newTodo);
-        onClose();
+  const handleSubmit = () => {
+    if (!title.trim()) return;
+    const newTodo: Todo = {
+      id: uuidv4(),
+      title,
+      createdAt: Date.now(),
+      durationMinutes: duration,
+      completed: false,
     };
+    onSubmit(newTodo);
+    onClose();
+  };
 
-    return (
-     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-xl text-gray-500 font-semibold mb-4">New Todo</h2>
         <input
@@ -63,6 +62,4 @@ export default function TodoFrom({ onSubmit, onClose }: Props) {
       </div>
     </div>
   );
-
 }
-
