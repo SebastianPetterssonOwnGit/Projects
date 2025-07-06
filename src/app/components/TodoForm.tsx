@@ -12,6 +12,7 @@ type Props = {
 export default function TodoFrom({ onSubmit, onClose }: Props) {
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(10);
+  const [noTimeLimit, setNoTimeLimit] = useState(false);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -21,6 +22,8 @@ export default function TodoFrom({ onSubmit, onClose }: Props) {
       createdAt: Date.now(),
       durationMinutes: duration,
       completed: false,
+      expired: false,
+      notified: false,
     };
     onSubmit(newTodo);
     onClose();
