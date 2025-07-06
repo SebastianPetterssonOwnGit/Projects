@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Todo } from "../types/todo";
 
 const LOCAL_KEY = "my-todos";
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const notifiedSet = useRef(new Set<string>());
 
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
@@ -27,14 +28,23 @@ export function useTodos() {
     const interval = setInterval(() => {
       setTodos((prev) =>
         prev.map((todo) => {
+          if (todo.completed || todo.expired || todo.durationMinutes === null)
+            return todo;
+
           const timePassed = Date.now() - todo.createdAt;
           const durationMs = todo.durationMinutes * 60 * 1000;
-          if (!todo.completed && !todo.expired && timePassed >= durationMs) {
-            if (!todo.notified) {
+
+          const hasExpired = timePassed >= durationMs;
+
+          if (hasExpired) {
+            if (!notifiedSet.current.has(todo.id)) {
+              notifiedSet.current.add(todo.id);
               showExpirationNotification(todo.title);
             }
+
             return { ...todo, expired: true, notified: true };
           }
+
           return todo;
         })
       );

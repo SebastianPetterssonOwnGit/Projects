@@ -15,7 +15,18 @@ export default function TodoList({
   onComplete,
   onClearExpired,
 }: Props) {
-  const active = todos.filter((t) => !t.completed && !t.expired);
+  const active = todos
+    .filter((t) => !t.completed && !t.expired)
+    .sort((a, b) => {
+      if (a.durationMinutes === null) return 1;
+      if (b.durationMinutes === null) return -1;
+
+      const aTimeLeft =
+        a.createdAt + a.durationMinutes * 60 * 1000 - Date.now();
+      const bTimeLeft =
+        b.createdAt + b.durationMinutes * 60 * 1000 - Date.now();
+      return aTimeLeft - bTimeLeft;
+    });
   const expired = todos.filter((t) => t.expired && !t.completed);
 
   return (

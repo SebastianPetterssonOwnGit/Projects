@@ -14,6 +14,9 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
     todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt)
   );
 
+  const isUrgent =
+    todo.durationMinutes !== null && !todo.expired && timeLeft <= 5 * 60 * 1000; // less than 5 min left
+
   const isExpired = !todo.completed && timeLeft <= 0;
 
   useEffect(() => {
@@ -45,7 +48,11 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
   return (
     <div
       className={`p-4 border rounded shadow-sm space-y-2 transition-colors ${
-        isExpired ? "bg-red-100 border-red-400 text-red-700" : "bg-white"
+        isExpired
+          ? "bg-red-100 border-red-400 text-red-700"
+          : isUrgent
+          ? "bg-yellow-50 border-yellow-400"
+          : "bg-white"
       }`}
     >
       <div className="flex justify-between">
