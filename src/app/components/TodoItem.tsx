@@ -10,27 +10,35 @@ type Props = {
 };
 
 export default function TodoItem({ todo, onDelete, onComplete }: Props) {
-  const [timeLeft, setTimeLeft] = useState<number>(
-    todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt)
-  );
+  const [timeLeft, setTimeLeft] = useState<number | null>(() => {
+    if (todo.durationMinutes === null) return null;
+    return todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt);
+  });
 
-  const isUrgent =
-    todo.durationMinutes !== null && !todo.expired && timeLeft <= 5 * 60 * 1000; // less than 5 min left
-
-  const isExpired = !todo.completed && timeLeft <= 0;
+  const isTimed = todo.durationMinutes !== null;
 
   useEffect(() => {
-    if (todo.completed) return;
+    if (!isTimed || todo.completed) return;
+
     const interval = setInterval(() => {
       const remaining =
-        todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt);
+        todo.durationMinutes! * 60 * 1000 - (Date.now() - todo.createdAt);
       setTimeLeft(Math.max(remaining, 0));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [todo]);
+  }, [todo, isTimed]);
 
-  const percentLeft = (timeLeft / (todo.durationMinutes * 60 * 1000)) * 100;
+  const isUrgent =
+    isTimed && !todo.expired && !todo.completed && timeLeft! <= 5 * 60 * 1000;
+
+  const isExpired =
+    isTimed && !todo.completed && timeLeft !== null && timeLeft <= 0;
+
+  const percentLeft =
+    isTimed && timeLeft !== null
+      ? (timeLeft / (todo.durationMinutes! * 60 * 1000)) * 100
+      : 0;
 
   const formatTime = (ms: number) => {
     const m = Math.floor(ms / 60000);
@@ -66,12 +74,15 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
         >
           {todo.completed
             ? "✅ Done"
+            : !isTimed
+            ? "📝 No deadline"
             : isExpired
             ? "⏰ Expired"
-            : `⏱ ${formatTime(timeLeft)}`}
+            : `⏱ ${formatTime(timeLeft!)}`}
         </span>
       </div>
-      {!todo.completed && (
+
+      {isTimed && !todo.completed && timeLeft !== null && (
         <div className="w-full h-2 bg-gray-200 rounded">
           <div
             className={`h-full ${barColor} rounded transition-all duration-1000`}
@@ -79,6 +90,7 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
           />
         </div>
       )}
+
       <div className="flex gap-3 text-sm mt-1">
         {!todo.completed && (
           <button
