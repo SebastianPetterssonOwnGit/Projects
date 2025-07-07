@@ -129,12 +129,12 @@ export default function TodoItem({
           onClick={() =>
             onToggleTimed(
               todo.id,
-              todo.durationMinutes === null ? 10 : null // default back to 10 min
+              todo.durationMinutes === null ? 5 : null // default back to 10 min
             )
           }
         >
           {todo.durationMinutes === null
-            ? "⏱ Set reminder"
+            ? "⏱ Set reminder 5 min"
             : "⏳ Make timeless"}
         </button>
 
