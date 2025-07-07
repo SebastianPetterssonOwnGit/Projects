@@ -71,6 +71,22 @@ export function useTodos() {
     setTodos((prev) => prev.filter((todo) => !todo.expired));
   };
 
+  const handleToggleTimed = (id: string, newDuration: number | null) => {
+    setTodos((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              durationMinutes: newDuration,
+              createdAt: Date.now(), // reset timer if changing
+              expired: false,
+              notified: false,
+            }
+          : t
+      )
+    );
+  };
+
   function showExpirationNotification(title: string) {
     if (Notification.permission === "granted") {
       new Notification("⏰ Todo Expired", {
@@ -79,5 +95,12 @@ export function useTodos() {
     }
   }
 
-  return { todos, addTodo, removeTodo, markComplete, handleClearExpired };
+  return {
+    todos,
+    addTodo,
+    removeTodo,
+    markComplete,
+    handleClearExpired,
+    handleToggleTimed,
+  };
 }

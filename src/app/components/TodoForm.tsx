@@ -13,7 +13,14 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(10);
   const [noTimeLimit, setNoTimeLimit] = useState<boolean>(false);
+  const [tags, setTags] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
+
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    titleInputRef.current?.focus();
+  }, []);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -25,17 +32,16 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
       completed: false,
       expired: false,
       notified: false,
+      tags: tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((t) => t.length > 0),
+      category: category.trim() || undefined,
     };
     onSubmit(newTodo);
     onClose();
   };
 
-  // Autofocus title input on mount
-  useEffect(() => {
-    titleInputRef.current?.focus();
-  }, []);
-
-  // Submit on Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -59,6 +65,20 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
           onChange={(e) => setTitle(e.target.value)}
         />
 
+        <input
+          className="border text-gray-700 p-2 w-full mb-4 rounded"
+          placeholder="Tags (comma separated)"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+        />
+
+        <input
+          className="border text-gray-700 p-2 w-full mb-4 rounded"
+          placeholder="Category (optional)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+
         <div className="flex items-center mb-4">
           <input
             id="noTimeLimit"
@@ -75,16 +95,16 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
         {!noTimeLimit && (
           <>
             <label className="block mb-2 text-gray-700">
-              Duration (minutes):
+              Reminder in (minutes):
             </label>
             <select
               className="border text-gray-700 p-2 w-full mb-4 rounded"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
             >
-              {[1, 2, 3, 4, 5, 10, 15, 30, 60].map((min) => (
+              {[1, 2, 5, 10, 15, 30, 60].map((min) => (
                 <option key={min} value={min}>
-                  {min} minutes
+                  {min} min
                 </option>
               ))}
             </select>

@@ -7,6 +7,7 @@ type Props = {
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   onClearExpired: () => void;
+  onToggleTimed: (id: string, newDuration: number | null) => void;
 };
 
 export default function TodoList({
@@ -14,6 +15,7 @@ export default function TodoList({
   onDelete,
   onComplete,
   onClearExpired,
+  onToggleTimed,
 }: Props) {
   const active = todos
     .filter((t) => !t.completed && !t.expired)
@@ -27,6 +29,7 @@ export default function TodoList({
         b.createdAt + b.durationMinutes * 60 * 1000 - Date.now();
       return aTimeLeft - bTimeLeft;
     });
+
   const expired = todos.filter((t) => t.expired && !t.completed);
 
   return (
@@ -41,6 +44,7 @@ export default function TodoList({
               todo={todo}
               onDelete={onDelete}
               onComplete={onComplete}
+              onToggleTimed={onToggleTimed}
             />
           ))}
         </div>
@@ -64,6 +68,7 @@ export default function TodoList({
                 todo={todo}
                 onDelete={onDelete}
                 onComplete={onComplete}
+                onToggleTimed={onToggleTimed}
               />
             ))}
           </div>

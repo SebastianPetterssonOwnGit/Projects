@@ -7,19 +7,29 @@ type Props = {
   todo: Todo;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
+  onToggleTimed: (id: string, newDuration: number | null) => void; // <-- new
 };
 
-export default function TodoItem({ todo, onDelete, onComplete }: Props) {
-  const [timeLeft, setTimeLeft] = useState<number | null>(() => {
-    if (todo.durationMinutes === null) return null;
-    return todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt);
-  });
+export default function TodoItem({
+  todo,
+  onDelete,
+  onComplete,
+  onToggleTimed,
+}: Props) {
+  const [timeLeft, setTimeLeft] = useState<number>(
+    todo.durationMinutes !== null
+      ? todo.durationMinutes * 60 * 1000 - (Date.now() - todo.createdAt)
+      : 0
+  );
 
-  const isTimed = todo.durationMinutes !== null;
+  const isUrgent =
+    todo.durationMinutes !== null && !todo.expired && timeLeft <= 5 * 60 * 1000;
+
+  const isExpired =
+    !todo.completed && todo.durationMinutes !== null && timeLeft <= 0;
 
   useEffect(() => {
-    if (!isTimed || todo.completed) return;
-
+    if (todo.completed || todo.durationMinutes === null) return;
     const interval = setInterval(() => {
       const remaining =
         todo.durationMinutes! * 60 * 1000 - (Date.now() - todo.createdAt);
@@ -27,17 +37,11 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [todo, isTimed]);
-
-  const isUrgent =
-    isTimed && !todo.expired && !todo.completed && timeLeft! <= 5 * 60 * 1000;
-
-  const isExpired =
-    isTimed && !todo.completed && timeLeft !== null && timeLeft <= 0;
+  }, [todo]);
 
   const percentLeft =
-    isTimed && timeLeft !== null
-      ? (timeLeft / (todo.durationMinutes! * 60 * 1000)) * 100
+    todo.durationMinutes !== null
+      ? (timeLeft / (todo.durationMinutes * 60 * 1000)) * 100
       : 0;
 
   const formatTime = (ms: number) => {
@@ -63,7 +67,7 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
           : "bg-white"
       }`}
     >
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <h3 className={todo.completed ? "line-through text-gray-400" : ""}>
           {todo.title}
         </h3>
@@ -74,15 +78,34 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
         >
           {todo.completed
             ? "✅ Done"
-            : !isTimed
-            ? "📝 No deadline"
+            : todo.durationMinutes === null
+            ? "⏳ Timeless"
             : isExpired
-            ? "⏰ Expired"
-            : `⏱ ${formatTime(timeLeft!)}`}
+            ? "🔕 Reminder passed"
+            : `🔔 In ${formatTime(timeLeft)}`}
         </span>
       </div>
 
-      {isTimed && !todo.completed && timeLeft !== null && (
+      {todo.category && (
+        <div className="text-xs text-blue-500 font-medium">
+          📁 {todo.category}
+        </div>
+      )}
+
+      {todo.tags && todo.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 text-xs text-gray-600">
+          {todo.tags.map((tag) => (
+            <span
+              key={tag}
+              className="bg-gray-200 px-2 py-0.5 rounded-full text-xs"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!todo.completed && todo.durationMinutes !== null && (
         <div className="w-full h-2 bg-gray-200 rounded">
           <div
             className={`h-full ${barColor} rounded transition-all duration-1000`}
@@ -91,7 +114,7 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
         </div>
       )}
 
-      <div className="flex gap-3 text-sm mt-1">
+      <div className="flex flex-wrap gap-3 text-sm mt-2">
         {!todo.completed && (
           <button
             className="text-green-600 hover:underline"
@@ -100,6 +123,21 @@ export default function TodoItem({ todo, onDelete, onComplete }: Props) {
             ✅ Complete
           </button>
         )}
+
+        <button
+          className="text-blue-500 hover:underline"
+          onClick={() =>
+            onToggleTimed(
+              todo.id,
+              todo.durationMinutes === null ? 5 : null // default back to 10 min
+            )
+          }
+        >
+          {todo.durationMinutes === null
+            ? "⏱ Set reminder 5 min"
+            : "⏳ Make timeless"}
+        </button>
+
         <button
           className="text-red-500 hover:underline"
           onClick={() => onDelete(todo.id)}

@@ -7,8 +7,14 @@ import TodoList from "./components/TodoList";
 import { useTodos } from "./hooks/useTodos";
 
 export default function Home() {
-  const { todos, addTodo, removeTodo, markComplete, handleClearExpired } =
-    useTodos();
+  const {
+    todos,
+    addTodo,
+    removeTodo,
+    markComplete,
+    handleClearExpired,
+    handleToggleTimed,
+  } = useTodos();
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -22,6 +28,7 @@ export default function Home() {
         onDelete={removeTodo}
         onComplete={markComplete}
         onClearExpired={handleClearExpired}
+        onToggleTimed={handleToggleTimed}
       />
     </main>
   );
