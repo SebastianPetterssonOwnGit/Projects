@@ -6,7 +6,7 @@ import TodoForm from "./components/TodoForm";
 import TodoList from "./components/TodoList";
 import TagFilter from "./components/TagFilter";
 import { useTodos } from "./hooks/useTodos";
-import { useTags } from "./hooks/";
+import { useTags } from "./hooks/useTags";
 
 export default function Home() {
   const {
