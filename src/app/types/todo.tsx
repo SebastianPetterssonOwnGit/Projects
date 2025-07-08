@@ -7,5 +7,4 @@ export interface Todo {
   expired?: boolean;
   notified?: boolean;
   tags?: string[];
-  category?: string;
 }

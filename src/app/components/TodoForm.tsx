@@ -13,8 +13,7 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState(10);
   const [noTimeLimit, setNoTimeLimit] = useState<boolean>(false);
-  const [tags, setTags] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [tagsInput, setTagsInput] = useState("");
 
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +23,12 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
+
+    const tags = tagsInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
     const newTodo: Todo = {
       id: uuidv4(),
       title: title.trim(),
@@ -32,11 +37,7 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
       completed: false,
       expired: false,
       notified: false,
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((t) => t.length > 0),
-      category: category.trim() || undefined,
+      tags,
     };
     onSubmit(newTodo);
     onClose();
@@ -66,17 +67,10 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
         />
 
         <input
-          className="border text-gray-700 p-2 w-full mb-4 rounded"
+          className="border text-gray-500 p-2 w-full mb-4 rounded"
           placeholder="Tags (comma separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
-
-        <input
-          className="border text-gray-700 p-2 w-full mb-4 rounded"
-          placeholder="Category (optional)"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={tagsInput}
+          onChange={(e) => setTagsInput(e.target.value)}
         />
 
         <div className="flex items-center mb-4">
