@@ -18,18 +18,23 @@ export default function Home() {
     handleToggleTimed,
   } = useTodos();
 
-  const { selectedTags, toggleTag } = useTags();
+  const { selectedTags, toggleTag, setSelectedTags } = useTags();
   const [showForm, setShowForm] = useState(false);
 
+  const activeTodos = todos.filter((todo) => !todo.completed);
   const allTags = Array.from(
-    new Set(todos.flatMap((todo) => todo.tags))
-  ).sort();
+    new Set(
+      activeTodos.flatMap((todo) => (Array.isArray(todo.tags) ? todo.tags : []))
+    )
+  )
+    .filter(Boolean)
+    .sort();
 
   const filteredTodos =
     selectedTags.length === 0
       ? todos
       : todos.filter((todo) =>
-          selectedTags.every((tag) => todo.tags.includes(tag))
+          selectedTags.some((tag) => todo.tags.includes(tag))
         );
 
   return (
@@ -42,9 +47,10 @@ export default function Home() {
         tags={allTags}
         selectedTags={selectedTags}
         onToggleTag={toggleTag}
+        onClearTags={() => setSelectedTags([])}
       />
       <TodoList
-        todos={todos}
+        todos={filteredTodos}
         onDelete={removeTodo}
         onComplete={markComplete}
         onClearExpired={handleClearExpired}

@@ -2,6 +2,8 @@ import React from "react";
 import { Todo } from "../types/todo";
 import TodoItem from "./TodoItem";
 
+import { getTagColor } from "../utils/getTagColor";
+
 type Props = {
   todos: Todo[];
   onDelete: (id: string) => void;
@@ -44,9 +46,14 @@ export default function TodoList({
           {/* Tag groups */}
           {Object.entries(tagGroups).map(([tag, group]) => (
             <div key={tag}>
-              <h3 className="text-sm font-semibold text-blue-500 mb-2">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <span
+                  className={`w-3 h-3 rounded-full ${getTagColor(tag)}`}
+                  title={`Tag color for ${tag}`}
+                />
                 #{tag}
               </h3>
+
               <div className="space-y-3">
                 {group.map((todo) => (
                   <TodoItem

@@ -14,8 +14,24 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [duration, setDuration] = useState(10);
   const [noTimeLimit, setNoTimeLimit] = useState<boolean>(false);
   const [tagsInput, setTagsInput] = useState("");
+  const [selectedPreset, setSelectedPreset] = useState("");
+
+  const PRESET_TAGS = ["Home", "Work", "Personal", "Urgent", "Shopping"];
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const tags = tagsInput
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const addPresetTag = (tag: string) => {
+    if (!tags.includes(tag)) {
+      const newTags = [...tags, tag];
+      setTagsInput(newTags.join(", "));
+    }
+    setSelectedPreset(""); // reset dropdown
+  };
 
   useEffect(() => {
     titleInputRef.current?.focus();
@@ -23,11 +39,6 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-
-    const tags = tagsInput
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
 
     const newTodo: Todo = {
       id: uuidv4(),
@@ -66,6 +77,32 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
           onChange={(e) => setTitle(e.target.value)}
         />
 
+        {/* Preset tag dropdown */}
+        <select
+          value={""}
+          onChange={(e) => {
+            const selected = e.target.value;
+            const currentTags = tagsInput
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean);
+
+            if (selected && !currentTags.includes(selected)) {
+              const newTags = [...currentTags, selected];
+              setTagsInput(newTags.join(", "));
+            }
+          }}
+          className="border text-gray-700 p-2 w-full mb-2 rounded bg-white"
+        >
+          <option value="">Add preset tag...</option>
+          {["Home", "Work", "Personal", "Urgent", "Shopping"].map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
+        </select>
+
+        {/* Custom tag input */}
         <input
           className="border text-gray-500 p-2 w-full mb-4 rounded"
           placeholder="Tags (comma separated)"

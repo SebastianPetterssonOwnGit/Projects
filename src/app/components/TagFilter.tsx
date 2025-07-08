@@ -1,4 +1,3 @@
-// components/TagFilter.tsx
 "use client";
 
 import React from "react";
@@ -7,9 +6,17 @@ type Props = {
   tags: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
 };
 
-export default function TagFilter({ tags, selectedTags, onToggleTag }: Props) {
+export default function TagFilter({
+  tags,
+  selectedTags,
+  onToggleTag,
+  onClearTags,
+}: Props) {
+  if (tags.length === 0) return null;
+
   return (
     <div className="px-6 py-4 flex flex-wrap gap-2">
       {tags.map((tag) => {
@@ -28,6 +35,14 @@ export default function TagFilter({ tags, selectedTags, onToggleTag }: Props) {
           </button>
         );
       })}
+      {selectedTags.length > 0 && (
+        <button
+          onClick={onClearTags}
+          className="ml-2 px-3 py-1 text-sm rounded-full bg-red-100 text-red-700 hover:bg-red-200"
+        >
+          Clear Selected Tags
+        </button>
+      )}
     </div>
   );
 }

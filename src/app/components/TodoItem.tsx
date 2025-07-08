@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Todo } from "../types/todo";
 
+import { getTagColor } from "../utils/getTagColor";
+
 type Props = {
   todo: Todo;
   onDelete: (id: string) => void;
@@ -139,6 +141,20 @@ export default function TodoItem({
           🗑 Delete
         </button>
       </div>
+      {todo.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {todo.tags.map((tag) => (
+            <span
+              key={tag}
+              className={`text-xs px-2 py-0.5 rounded-full ${getTagColor(
+                tag
+              )} text-gray-800`}
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
