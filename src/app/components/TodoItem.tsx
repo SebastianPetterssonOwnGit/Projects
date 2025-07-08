@@ -86,12 +86,6 @@ export default function TodoItem({
         </span>
       </div>
 
-      {todo.category && (
-        <div className="text-xs text-blue-500 font-medium">
-          📁 {todo.category}
-        </div>
-      )}
-
       {todo.tags && todo.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 text-xs text-gray-600">
           {todo.tags.map((tag) => (

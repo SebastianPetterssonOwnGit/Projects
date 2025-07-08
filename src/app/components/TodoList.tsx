@@ -8,6 +8,7 @@ type Props = {
   onComplete: (id: string) => void;
   onClearExpired: () => void;
   onToggleTimed: (id: string, newDuration: number | null) => void;
+  selectedTag: string | null;
 };
 
 export default function TodoList({
@@ -16,9 +17,14 @@ export default function TodoList({
   onComplete,
   onClearExpired,
   onToggleTimed,
+  selectedTag,
 }: Props) {
-  const active = todos
-    .filter((t) => !t.completed && !t.expired)
+  const filteredTodos = selectedTag
+    ? todos.filter((t) => t.tags?.includes(selectedTag))
+    : todos;
+
+  const active = filteredTodos
+    .filter((t) => !t.completed && !t.expired) // t = todo
     .sort((a, b) => {
       if (a.durationMinutes === null) return 1;
       if (b.durationMinutes === null) return -1;
@@ -30,7 +36,7 @@ export default function TodoList({
       return aTimeLeft - bTimeLeft;
     });
 
-  const expired = todos.filter((t) => t.expired && !t.completed);
+  const expired = todos.filter((ts) => ts.expired && !ts.completed); // ts = todos
 
   return (
     <div className="px-6 py-4 space-y-6">
@@ -58,7 +64,7 @@ export default function TodoList({
               onClick={onClearExpired}
               className="text-sm text-red-500 hover:underline"
             >
-              Clear Expired
+              Clear Notice
             </button>
           </div>
           <div className="space-y-3">
