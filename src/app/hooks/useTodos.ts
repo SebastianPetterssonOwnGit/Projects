@@ -53,6 +53,20 @@ export function useTodos() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem(LOCAL_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // ensure all todos have .tags as an array
+      setTodos(
+        parsed.map((todo: any) => ({
+          ...todo,
+          tags: Array.isArray(todo.tags) ? todo.tags : [],
+        }))
+      );
+    }
+  }, []);
+
   const addTodo = (todo: Todo) => {
     setTodos((prev) => [...prev, todo]);
   };

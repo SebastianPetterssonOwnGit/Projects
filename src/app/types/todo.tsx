@@ -6,5 +6,5 @@ export interface Todo {
   completed: boolean;
   expired?: boolean;
   notified?: boolean;
-  tags?: string[];
+  tags: string[];
 }
