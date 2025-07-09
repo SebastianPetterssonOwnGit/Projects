@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Todo } from "../types/todo";
+
 import { v4 as uuidv4 } from "uuid";
 
 type Props = {
@@ -14,9 +15,18 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [duration, setDuration] = useState(10);
   const [noTimeLimit, setNoTimeLimit] = useState<boolean>(false);
   const [tagsInput, setTagsInput] = useState("");
-  const [selectedPreset, setSelectedPreset] = useState("");
+  const [showPresetEditor, setShowPresetEditor] = useState(false);
 
-  const PRESET_TAGS = ["Home", "Work", "Personal", "Urgent", "Shopping"];
+  const [presetTags, setPresetTags] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("presetTags");
+      return stored
+        ? JSON.parse(stored)
+        : ["Home", "Work", "Health", "Errands", "Study"];
+    }
+    return ["Home", "Work", "Health", "Errands", "Study"];
+  });
+  const [newPresetInput, setNewPresetInput] = useState("");
 
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,17 +35,15 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
     .map((tag) => tag.trim())
     .filter(Boolean);
 
-  const addPresetTag = (tag: string) => {
-    if (!tags.includes(tag)) {
-      const newTags = [...tags, tag];
-      setTagsInput(newTags.join(", "));
-    }
-    setSelectedPreset(""); // reset dropdown
-  };
-
   useEffect(() => {
     titleInputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("presetTags", JSON.stringify(presetTags));
+    }
+  }, [presetTags]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -77,38 +85,86 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        {/* Preset tag dropdown */}
         <select
-          value={""}
+          className="border text-gray-700 p-2 w-full mb-4 rounded"
           onChange={(e) => {
-            const selected = e.target.value;
-            const currentTags = tagsInput
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean);
-
-            if (selected && !currentTags.includes(selected)) {
-              const newTags = [...currentTags, selected];
-              setTagsInput(newTags.join(", "));
+            const newTag = e.target.value;
+            if (newTag && !tagsInput.includes(newTag)) {
+              setTagsInput((prev) => (prev ? `${prev}, ${newTag}` : newTag));
             }
+            e.target.value = "";
           }}
-          className="border text-gray-700 p-2 w-full mb-2 rounded bg-white"
         >
-          <option value="">Add preset tag...</option>
-          {["Home", "Work", "Personal", "Urgent", "Shopping"].map((tag) => (
+          <option value="">+ Add from preset</option>
+          {presetTags.map((tag) => (
             <option key={tag} value={tag}>
               {tag}
             </option>
           ))}
         </select>
 
-        {/* Custom tag input */}
         <input
           className="border text-gray-500 p-2 w-full mb-4 rounded"
           placeholder="Tags (comma separated)"
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
         />
+
+        <button
+          onClick={() => setShowPresetEditor((prev) => !prev)}
+          className="mb-4 text-sm text-blue-500 hover:underline"
+        >
+          {showPresetEditor ? "Hide preset tags" : "Edit preset tags"}
+        </button>
+
+        {showPresetEditor && (
+          <div className="mb-4">
+            <label className="block mb-1 text-gray-700 font-medium">
+              Preset Tags
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {presetTags.map((tag) => (
+                <div
+                  key={tag}
+                  className="flex items-center bg-gray-500 text-sm px-3 py-1 rounded-full"
+                >
+                  <span>#{tag}</span>
+                  <button
+                    onClick={() =>
+                      setPresetTags((prev) => prev.filter((t) => t !== tag))
+                    }
+                    className="ml-2 text-red-500 hover:text-red-700"
+                    aria-label={`Remove ${tag}`}
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPresetInput}
+                onChange={(e) => setNewPresetInput(e.target.value)}
+                placeholder="Add new preset"
+                className="border rounded p-2 text-black flex-grow text-sm"
+              />
+              <button
+                onClick={() => {
+                  const trimmed = newPresetInput.trim();
+                  if (trimmed && !presetTags.includes(trimmed)) {
+                    setPresetTags([...presetTags, trimmed]);
+                  }
+                  setNewPresetInput("");
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center mb-4">
           <input
