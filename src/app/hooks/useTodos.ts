@@ -56,14 +56,19 @@ export function useTodos() {
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // ensure all todos have .tags as an array
-      setTodos(
-        parsed.map((todo: any) => ({
-          ...todo,
-          tags: Array.isArray(todo.tags) ? todo.tags : [],
-        }))
-      );
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setTodos(
+            (parsed as Todo[]).map((todo) => ({
+              ...todo,
+              tags: Array.isArray(todo.tags) ? todo.tags : [],
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("Failed to parse saved todos:", e);
+      }
     }
   }, []);
 
