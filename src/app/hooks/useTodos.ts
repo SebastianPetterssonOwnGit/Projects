@@ -7,23 +7,42 @@ const LOCAL_KEY = "my-todos";
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [loaded, setLoaded] = useState(false); // Prevent early overwrite
   const notifiedSet = useRef(new Set<string>());
 
+  // 🔁 Load from localStorage once on mount
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved) setTodos(JSON.parse(saved));
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const todosWithTags = (parsed as Todo[]).map((todo) => ({
+          ...todo,
+          tags: Array.isArray(todo.tags) ? todo.tags : [],
+        }));
+        setTodos(todosWithTags);
+      } catch (err) {
+        console.error("Failed to parse todos from localStorage", err);
+      }
+    }
+    setLoaded(true);
   }, []);
 
+  // 💾 Save to localStorage whenever todos change (after load)
   useEffect(() => {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(todos));
-  }, [todos]);
+    if (loaded) {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(todos));
+    }
+  }, [todos, loaded]);
 
+  // 🔔 Ask for notification permission once
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
 
+  // ⏱️ Timer to mark expired todos
   useEffect(() => {
     const interval = setInterval(() => {
       setTodos((prev) =>
@@ -33,7 +52,6 @@ export function useTodos() {
 
           const timePassed = Date.now() - todo.createdAt;
           const durationMs = todo.durationMinutes * 60 * 1000;
-
           const hasExpired = timePassed >= durationMs;
 
           if (hasExpired) {
@@ -53,25 +71,16 @@ export function useTodos() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setTodos(
-            (parsed as Todo[]).map((todo) => ({
-              ...todo,
-              tags: Array.isArray(todo.tags) ? todo.tags : [],
-            }))
-          );
-        }
-      } catch (e) {
-        console.error("Failed to parse saved todos:", e);
-      }
+  // ✅ Helper: Notification
+  function showExpirationNotification(title: string) {
+    if (Notification.permission === "granted") {
+      new Notification("⏰ Todo Expired", {
+        body: `Your todo "${title}" has expired.`,
+      });
     }
-  }, []);
+  }
 
+  // ✅ Actions
   const addTodo = (todo: Todo) => {
     setTodos((prev) => [...prev, todo]);
   };
@@ -97,7 +106,7 @@ export function useTodos() {
           ? {
               ...t,
               durationMinutes: newDuration,
-              createdAt: Date.now(), // reset timer if changing
+              createdAt: Date.now(),
               expired: false,
               notified: false,
             }
@@ -105,14 +114,6 @@ export function useTodos() {
       )
     );
   };
-
-  function showExpirationNotification(title: string) {
-    if (Notification.permission === "granted") {
-      new Notification("⏰ Todo Expired", {
-        body: `Your todo "${title}" has expired.`,
-      });
-    }
-  }
 
   return {
     todos,
