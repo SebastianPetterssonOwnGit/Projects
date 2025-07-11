@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Todo } from "../types/todo";
+import { Todo, RepeatInfo } from "../types/todo";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,6 +16,17 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [noTimeLimit, setNoTimeLimit] = useState<boolean>(false);
   const [tagsInput, setTagsInput] = useState("");
   const [showPresetEditor, setShowPresetEditor] = useState(false);
+
+  // 🆕 Scheduled date
+  const [scheduledFor, setScheduledFor] = useState<string>("");
+
+  // 🆕 Repeat info
+  const [repeatFrequency, setRepeatFrequency] = useState<
+    "none" | "daily" | "weekly" | "monthly"
+  >("none");
+  const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<number>(0); // Sunday default
+  const [repeatDayOfMonth, setRepeatDayOfMonth] = useState<number>(1);
+  const [repeatTime, setRepeatTime] = useState<string>("10:00");
 
   const [presetTags, setPresetTags] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
@@ -48,6 +59,26 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const handleSubmit = () => {
     if (!title.trim()) return;
 
+    let repeat: RepeatInfo | undefined;
+
+    if (repeatFrequency !== "none") {
+      repeat = {
+        frequency: repeatFrequency,
+      };
+
+      if (repeatFrequency === "weekly" && repeatDayOfWeek !== undefined) {
+        repeat.dayOfWeek = repeatDayOfWeek;
+      }
+
+      if (repeatFrequency === "monthly" && repeatDayOfMonth !== undefined) {
+        repeat.dayOfMonth = repeatDayOfMonth;
+      }
+
+      if (repeatTime) {
+        repeat.time = repeatTime;
+      }
+    }
+
     const newTodo: Todo = {
       id: uuidv4(),
       title: title.trim(),
@@ -57,6 +88,10 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
       expired: false,
       notified: false,
       tags,
+      ...(scheduledFor && {
+        scheduledFor: new Date(scheduledFor).toISOString(),
+      }),
+      ...(repeat && { repeat }),
     };
     onSubmit(newTodo);
     onClose();
@@ -165,6 +200,87 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
             </div>
           </div>
         )}
+
+        <div className="space-y-2">
+          <label className="block text-gray-500 text-sm font-medium">
+            Scheduled For
+          </label>
+          <input
+            type="datetime-local"
+            value={scheduledFor}
+            onChange={(e) => setScheduledFor(e.target.value)}
+            className="w-full text-gray-500 p-2 border rounded"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-gray-500 text-sm font-medium">
+            Repeat
+          </label>
+          <select
+            value={repeatFrequency}
+            onChange={(e) => setRepeatFrequency(e.target.value as any)}
+            className="w-full text-gray-500 p-2 border rounded"
+          >
+            <option value="none">None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+
+          {repeatFrequency === "weekly" && (
+            <div>
+              <label className="block text-gray-500 text-sm">Day of Week</label>
+              <select
+                value={repeatDayOfWeek}
+                onChange={(e) => setRepeatDayOfWeek(parseInt(e.target.value))}
+                className="w-full text-gray-500 p-2 border rounded"
+              >
+                {[
+                  "Sunday",
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                ].map((day, i) => (
+                  <option key={i} value={i}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {repeatFrequency === "monthly" && (
+            <div>
+              <label className="block text-gray-500 text-sm">
+                Day of Month
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={repeatDayOfMonth}
+                onChange={(e) => setRepeatDayOfMonth(parseInt(e.target.value))}
+                className="w-full text-gray-500 p-2 border rounded"
+              />
+            </div>
+          )}
+
+          {repeatFrequency !== "none" && (
+            <div>
+              <label className="block text-gray-500 text-sm">Time of Day</label>
+              <input
+                type="time"
+                value={repeatTime}
+                onChange={(e) => setRepeatTime(e.target.value)}
+                className="w-full text-gray-500 p-2 border rounded"
+              />
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center mb-4">
           <input

@@ -45,31 +45,94 @@ export function useTodos() {
   // ⏱️ Timer to mark expired todos
   useEffect(() => {
     const interval = setInterval(() => {
-      setTodos((prev) =>
-        prev.map((todo) => {
-          if (todo.completed || todo.expired || todo.durationMinutes === null)
-            return todo;
+      setTodos((prevTodos) => {
+        const now = new Date();
 
-          const timePassed = Date.now() - todo.createdAt;
-          const durationMs = todo.durationMinutes * 60 * 1000;
-          const hasExpired = timePassed >= durationMs;
+        const updated = prevTodos.flatMap((todo) => {
+          if (todo.completed) return [todo];
 
-          if (hasExpired) {
+          const scheduledDate = todo.scheduledFor
+            ? new Date(todo.scheduledFor)
+            : null;
+
+          // Check expiration based on either scheduledFor or createdAt
+          let hasExpired = false;
+
+          // Handle scheduled start time
+          if (scheduledDate) {
+            hasExpired = now >= scheduledDate;
+          } else if (todo.durationMinutes != null && !todo.expired) {
+            const timePassed = now.getTime() - todo.createdAt;
+            const durationMs = todo.durationMinutes * 60 * 1000;
+            hasExpired = timePassed >= durationMs;
+          }
+
+          // Handle expiration
+          if (hasExpired && !todo.expired) {
             if (!notifiedSet.current.has(todo.id)) {
               notifiedSet.current.add(todo.id);
               showExpirationNotification(todo.title);
             }
 
-            return { ...todo, expired: true, notified: true };
+            // Generate a new instance if it's a recurring todo
+            if (todo.repeat) {
+              const nextTodo = generateNextRecurringTodo(todo);
+              return [{ ...todo, expired: true, notified: true }, nextTodo];
+            }
+
+            return [{ ...todo, expired: true, notified: true }];
           }
 
-          return todo;
-        })
-      );
+          return [todo];
+        });
+
+        return updated;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
+
+  function generateNextRecurringTodo(todo: Todo): Todo {
+    const base = todo.scheduledFor
+      ? new Date(todo.scheduledFor)
+      : new Date(todo.createdAt);
+    const next = new Date(base);
+
+    const { frequency, dayOfWeek, dayOfMonth, time } = todo.repeat ?? {};
+
+    if (frequency === "daily") {
+      next.setDate(base.getDate() + 1);
+    } else if (frequency === "weekly" && dayOfWeek != null) {
+      const currentDay = base.getDay();
+      const offset = (dayOfWeek + 7 - currentDay) % 7 || 7;
+      next.setDate(base.getDate() + offset);
+    } else if (frequency === "monthly" && dayOfMonth != null) {
+      next.setMonth(base.getMonth() + 1);
+      const daysInNextMonth = new Date(
+        next.getFullYear(),
+        next.getMonth() + 1,
+        0
+      ).getDate();
+      next.setDate(Math.min(dayOfMonth, daysInNextMonth));
+    }
+
+    // Apply time if available (e.g., "10:00")
+    if (time) {
+      const [hours, minutes] = time.split(":").map(Number);
+      next.setHours(hours, minutes, 0, 0);
+    }
+
+    return {
+      ...todo,
+      id: crypto.randomUUID(),
+      createdAt: next.getTime(), // time of generation
+      expired: false,
+      completed: false,
+      notified: false,
+      scheduledFor: next.toISOString(),
+    };
+  }
 
   // ✅ Helper: Notification
   function showExpirationNotification(title: string) {
@@ -90,9 +153,19 @@ export function useTodos() {
   };
 
   const markComplete = (id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: true } : t))
-    );
+    setTodos((prev) => {
+      const completedTodo = prev.find((t) => t.id === id);
+      const updated = prev.map((t) =>
+        t.id === id ? { ...t, completed: true } : t
+      );
+
+      if (completedTodo?.repeat) {
+        const nextTodo = cloneNextTodoInstance(completedTodo);
+        if (nextTodo) return [...updated, nextTodo];
+      }
+
+      return updated;
+    });
   };
 
   const handleClearExpired = () => {
@@ -122,5 +195,41 @@ export function useTodos() {
     markComplete,
     handleClearExpired,
     handleToggleTimed,
+  };
+}
+
+function getNextScheduledDate(todo: Todo): string | null {
+  if (!todo.repeat || !todo.scheduledFor) return null;
+
+  const current = new Date(todo.scheduledFor);
+
+  switch (todo.repeat.frequency) {
+    case "daily":
+      current.setDate(current.getDate() + 1);
+      break;
+    case "weekly":
+      current.setDate(current.getDate() + 7);
+      break;
+    case "monthly":
+      current.setMonth(current.getMonth() + 1);
+      break;
+    default:
+      return null;
+  }
+  return current.toISOString();
+}
+
+function cloneNextTodoInstance(todo: Todo): Todo | null {
+  const nextDate = getNextScheduledDate(todo);
+  if (!nextDate) return null;
+
+  return {
+    ...todo,
+    id: crypto.randomUUID(),
+    scheduledFor: nextDate,
+    completed: false,
+    expired: false,
+    createdAt: Date.now(),
+    notified: false,
   };
 }
