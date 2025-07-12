@@ -18,32 +18,45 @@ export default function TodoList({
   onClearExpired,
   onToggleTimed,
 }: Props) {
+  const now = new Date();
+
+  const isToday = (date: Date) => date.toDateString() === now.toDateString();
+
   const getTimeUntilDue = (todo: Todo) => {
     if (todo.scheduledFor) {
-      return new Date(todo.scheduledFor).getTime() - Date.now();
+      return new Date(todo.scheduledFor).getTime() - now.getTime();
     } else if (todo.durationMinutes != null && !todo.completed) {
-      return todo.createdAt + todo.durationMinutes * 60_000 - Date.now();
+      return todo.createdAt + todo.durationMinutes * 60_000 - now.getTime();
     }
     return Infinity;
   };
 
-  const now = new Date();
-  const sortedTodos = [...todos].sort(
-    (a, b) => getTimeUntilDue(a) - getTimeUntilDue(b)
-  );
+  const sortedTodos = [...todos]
+    .filter((t) => !t.completed && !t.expired)
+    .sort((a, b) => getTimeUntilDue(a) - getTimeUntilDue(b));
 
-  const active = sortedTodos.filter((t) => {
-    if (t.completed || t.expired || t.scheduledFor) return false;
-    return true;
+  // Split todos
+  const immediateTodos: Todo[] = [];
+  const futureScheduledTodos: Todo[] = [];
+
+  sortedTodos.forEach((t) => {
+    if (t.scheduledFor) {
+      const scheduledDate = new Date(t.scheduledFor);
+      if (isToday(scheduledDate) || scheduledDate <= now) {
+        immediateTodos.push(t); // Today or past scheduled — include in active
+      } else {
+        futureScheduledTodos.push(t); // Future — goes to bottom section
+      }
+    } else {
+      immediateTodos.push(t); // Timed todos (duration) or timeless
+    }
   });
 
-  const expired = sortedTodos.filter((t) => t.expired && !t.completed);
-
-  // Tag-based groups
+  // Then apply your tag-based grouping to `immediateTodos`
   const tagGroups: { [tag: string]: Todo[] } = {};
   const untagged: Todo[] = [];
 
-  active.forEach((todo) => {
+  immediateTodos.forEach((todo) => {
     if (todo.tags.length === 0) {
       untagged.push(todo);
     } else {
@@ -54,14 +67,16 @@ export default function TodoList({
     }
   });
 
-  // Scheduled (calendar) todos grouped by date
-  const scheduledTodos = sortedTodos.filter((t) => t.scheduledFor);
-  const groupedByDate = scheduledTodos.reduce((groups, todo) => {
+  // Group future scheduled todos by date
+  const groupedByDate = futureScheduledTodos.reduce((groups, todo) => {
     const dateKey = new Date(todo.scheduledFor!).toLocaleDateString();
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(todo);
     return groups;
   }, {} as Record<string, Todo[]>);
+
+  // Expired and completed handling remains the same
+  const expired = todos.filter((t) => t.expired && !t.completed);
 
   return (
     <div className="px-6 py-4 space-y-6">

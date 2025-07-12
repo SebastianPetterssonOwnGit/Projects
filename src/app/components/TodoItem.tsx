@@ -29,6 +29,9 @@ function formatScheduledLabel(dateString: string): string {
   const target = new Date(dateString);
   const now = new Date();
   const diffMs = target.getTime() - now.getTime();
+
+  if (diffMs <= 0) return "🔕 Scheduled passed";
+
   const diffMinutes = Math.round(diffMs / 60000);
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
@@ -37,7 +40,8 @@ function formatScheduledLabel(dateString: string): string {
     minute: "2-digit",
   });
 
-  if (diffMinutes <= 0) return "🔕 Scheduled passed";
+  if (diffMinutes < 1) return "⏰ In <1 min";
+
   if (diffMinutes < 60)
     return `⏰ In ${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""}`;
   if (now.toDateString() === target.toDateString())
@@ -138,7 +142,7 @@ export default function TodoItem({
           : "bg-white"
       }`}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex text-gray-500 justify-between items-center">
         <h3 className={todo.completed ? "line-through text-gray-500" : ""}>
           {todo.title}
         </h3>
