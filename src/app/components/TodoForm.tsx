@@ -21,9 +21,9 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [scheduledFor, setScheduledFor] = useState<string>("");
 
   // 🆕 Repeat info
-  const [repeatFrequency, setRepeatFrequency] = useState<
-    "none" | "daily" | "weekly" | "monthly"
-  >("none");
+  type RepeatFrequency = "none" | "daily" | "weekly" | "monthly";
+  const [repeatFrequency, setRepeatFrequency] =
+    useState<RepeatFrequency>("none");
   const [repeatDayOfWeek, setRepeatDayOfWeek] = useState<number>(0); // Sunday default
   const [repeatDayOfMonth, setRepeatDayOfMonth] = useState<number>(1);
   const [repeatTime, setRepeatTime] = useState<string>("10:00");
@@ -219,7 +219,9 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
           </label>
           <select
             value={repeatFrequency}
-            onChange={(e) => setRepeatFrequency(e.target.value as any)}
+            onChange={(e) =>
+              setRepeatFrequency(e.target.value as RepeatFrequency)
+            }
             className="w-full text-gray-500 p-2 border rounded"
           >
             <option value="none">None</option>

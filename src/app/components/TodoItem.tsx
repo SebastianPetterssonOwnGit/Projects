@@ -17,7 +17,7 @@ function formatDurationLong(ms: number) {
   const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
-  let parts = [];
+  const parts = [];
   if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
   if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
   if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
