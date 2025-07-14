@@ -20,8 +20,6 @@ export default function TodoList({
 }: Props) {
   const now = new Date();
 
-  const isToday = (date: Date) => date.toDateString() === now.toDateString();
-
   const getTimeUntilDue = (todo: Todo) => {
     if (todo.scheduledFor) {
       return new Date(todo.scheduledFor).getTime() - now.getTime();
