@@ -42,10 +42,13 @@ export default function TodoList({
   sortedTodos.forEach((t) => {
     if (t.scheduledFor) {
       const scheduledDate = new Date(t.scheduledFor);
-      if (isToday(scheduledDate) || scheduledDate <= now) {
-        immediateTodos.push(t); // Today or past scheduled — include in active
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+
+      if (scheduledDate <= endOfToday) {
+        immediateTodos.push(t);
       } else {
-        futureScheduledTodos.push(t); // Future — goes to bottom section
+        futureScheduledTodos.push(t);
       }
     } else {
       immediateTodos.push(t); // Timed todos (duration) or timeless
@@ -80,33 +83,6 @@ export default function TodoList({
 
   return (
     <div className="px-6 py-4 space-y-6">
-      {/* 📅 Scheduled Calendar Todos */}
-      {Object.keys(groupedByDate).length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-6">
-          <h2 className="text-blue-700 font-semibold text-lg mb-2 flex items-center gap-2">
-            📅 Scheduled Todos
-          </h2>
-          {Object.entries(groupedByDate).map(([date, items]) => (
-            <div key={date}>
-              <h3 className="text-sm font-semibold text-blue-600 mb-1 flex items-center gap-2">
-                📆 {date}
-              </h3>
-              <div className="space-y-2">
-                {items.map((todo) => (
-                  <TodoItem
-                    key={todo.id}
-                    todo={todo}
-                    onDelete={onDelete}
-                    onComplete={onComplete}
-                    onToggleTimed={onToggleTimed}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* 🏷️ Tag-based Todos */}
       {Object.keys(tagGroups).length > 0 && (
         <div className="space-y-6">
@@ -175,6 +151,33 @@ export default function TodoList({
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* 📅 Scheduled Calendar Todos */}
+      {Object.keys(groupedByDate).length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-6">
+          <h2 className="text-blue-700 font-semibold text-lg mb-2 flex items-center gap-2">
+            📅 Scheduled Todos
+          </h2>
+          {Object.entries(groupedByDate).map(([date, items]) => (
+            <div key={date}>
+              <h3 className="text-sm font-semibold text-blue-600 mb-1 flex items-center gap-2">
+                📆 {date}
+              </h3>
+              <div className="space-y-2">
+                {items.map((todo) => (
+                  <TodoItem
+                    key={todo.id}
+                    todo={todo}
+                    onDelete={onDelete}
+                    onComplete={onComplete}
+                    onToggleTimed={onToggleTimed}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
