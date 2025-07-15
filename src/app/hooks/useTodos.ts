@@ -55,11 +55,13 @@ export function useTodos() {
             ? new Date(todo.scheduledFor)
             : null;
 
-          // Check expiration based on either scheduledFor or createdAt
           let hasExpired = false;
 
-          // Handle scheduled start time
-          if (scheduledDate) {
+          if (scheduledDate && todo.durationMinutes != null) {
+            const reminderTime =
+              scheduledDate.getTime() - todo.durationMinutes * 60 * 1000;
+            hasExpired = now.getTime() >= reminderTime;
+          } else if (scheduledDate) {
             hasExpired = now >= scheduledDate;
           } else if (todo.durationMinutes != null && !todo.expired) {
             const timePassed = now.getTime() - todo.createdAt;
@@ -67,14 +69,12 @@ export function useTodos() {
             hasExpired = timePassed >= durationMs;
           }
 
-          // Handle expiration
           if (hasExpired && !todo.expired) {
             if (!notifiedSet.current.has(todo.id)) {
               notifiedSet.current.add(todo.id);
               showExpirationNotification(todo.title);
             }
 
-            // Generate a new instance if it's a recurring todo
             if (todo.repeat) {
               const nextTodo = generateNextRecurringTodo(todo);
               return [{ ...todo, expired: true, notified: true }, nextTodo];
@@ -188,6 +188,42 @@ export function useTodos() {
     );
   };
 
+  function getNextScheduledDate(todo: Todo): string | null {
+    if (!todo.repeat || !todo.scheduledFor) return null;
+
+    const current = new Date(todo.scheduledFor);
+
+    switch (todo.repeat.frequency) {
+      case "daily":
+        current.setDate(current.getDate() + 1);
+        break;
+      case "weekly":
+        current.setDate(current.getDate() + 7);
+        break;
+      case "monthly":
+        current.setMonth(current.getMonth() + 1);
+        break;
+      default:
+        return null;
+    }
+    return current.toISOString();
+  }
+
+  function cloneNextTodoInstance(todo: Todo): Todo | null {
+    const nextDate = getNextScheduledDate(todo);
+    if (!nextDate) return null;
+
+    return {
+      ...todo,
+      id: crypto.randomUUID(),
+      scheduledFor: nextDate,
+      completed: false,
+      expired: false,
+      createdAt: Date.now(),
+      notified: false,
+    };
+  }
+
   return {
     todos,
     addTodo,
@@ -195,41 +231,5 @@ export function useTodos() {
     markComplete,
     handleClearExpired,
     handleToggleTimed,
-  };
-}
-
-function getNextScheduledDate(todo: Todo): string | null {
-  if (!todo.repeat || !todo.scheduledFor) return null;
-
-  const current = new Date(todo.scheduledFor);
-
-  switch (todo.repeat.frequency) {
-    case "daily":
-      current.setDate(current.getDate() + 1);
-      break;
-    case "weekly":
-      current.setDate(current.getDate() + 7);
-      break;
-    case "monthly":
-      current.setMonth(current.getMonth() + 1);
-      break;
-    default:
-      return null;
-  }
-  return current.toISOString();
-}
-
-function cloneNextTodoInstance(todo: Todo): Todo | null {
-  const nextDate = getNextScheduledDate(todo);
-  if (!nextDate) return null;
-
-  return {
-    ...todo,
-    id: crypto.randomUUID(),
-    scheduledFor: nextDate,
-    completed: false,
-    expired: false,
-    createdAt: Date.now(),
-    notified: false,
   };
 }
