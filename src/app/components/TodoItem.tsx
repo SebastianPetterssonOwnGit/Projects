@@ -67,9 +67,17 @@ export default function TodoItem({
   onToggleTimed,
 }: Props) {
   const getTargetTime = () => {
-    return todo.scheduledFor
-      ? new Date(todo.scheduledFor).getTime()
-      : todo.createdAt + (todo.durationMinutes ?? 0) * 60 * 1000;
+    if (todo.scheduledFor && todo.durationMinutes !== null) {
+      return (
+        new Date(todo.scheduledFor).getTime() - todo.durationMinutes * 60 * 1000
+      );
+    }
+
+    if (todo.durationMinutes !== null) {
+      return todo.createdAt + todo.durationMinutes * 60 * 1000;
+    }
+
+    return todo.createdAt;
   };
 
   const [timeLeft, setTimeLeft] = useState<number>(
@@ -109,17 +117,6 @@ export default function TodoItem({
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  function formatDate(iso: string) {
-    const date = new Date(iso);
-    return date.toLocaleString(undefined, {
-      weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      month: "short",
-      day: "numeric",
-    });
-  }
-
   const barColor =
     percentLeft > 50
       ? "bg-green-400"
@@ -146,6 +143,28 @@ export default function TodoItem({
         <h3 className={todo.completed ? "line-through text-gray-500" : ""}>
           {todo.title}
         </h3>
+
+        {todo.scheduledFor && todo.durationMinutes !== null && (
+          <div className="text-xs text-gray-500 flex flex-col gap-0.5">
+            <div>
+              📅 Event at:{" "}
+              {new Date(todo.scheduledFor).toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+            <div>
+              🔔 Reminder at:{" "}
+              {new Date(
+                new Date(todo.scheduledFor).getTime() -
+                  todo.durationMinutes * 60 * 1000
+              ).toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+          </div>
+        )}
         <span
           className={`text-sm ${
             isExpired ? "text-red-500 font-semibold" : "text-gray-500"
@@ -164,13 +183,6 @@ export default function TodoItem({
       </div>
 
       <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-        {todo.scheduledFor && (
-          <div className="flex items-center gap-1">
-            <span>📅</span>
-            <span>{formatDate(todo.scheduledFor)}</span>
-          </div>
-        )}
-
         {todo.repeat && (
           <div className="flex items-center gap-1">
             <span>🔁</span>
@@ -224,16 +236,19 @@ export default function TodoItem({
           </button>
         )}
 
-        <button
-          className="text-blue-500 hover:underline"
-          onClick={() =>
-            onToggleTimed(todo.id, todo.durationMinutes === null ? 5 : null)
-          }
-        >
-          {todo.durationMinutes === null
-            ? "⏱ Set reminder 5 min"
-            : "⏳ Make timeless"}
-        </button>
+        {!todo.completed &&
+          (!todo.scheduledFor || todo.durationMinutes === null) && (
+            <button
+              className="text-blue-500 hover:underline"
+              onClick={() =>
+                onToggleTimed(todo.id, todo.durationMinutes === null ? 5 : null)
+              }
+            >
+              {todo.durationMinutes === null
+                ? "⏱ Set reminder 5 min"
+                : "⏳ Make timeless"}
+            </button>
+          )}
 
         <button
           className="text-red-500 hover:underline"

@@ -17,6 +17,14 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
   const [tagsInput, setTagsInput] = useState("");
   const [showPresetEditor, setShowPresetEditor] = useState(false);
 
+  const [touchedRepeatDayOfWeek, setTouchedRepeatDayOfWeek] = useState(false);
+  const [touchedRepeatDayOfMonth, setTouchedRepeatDayOfMonth] = useState(false);
+  const [touchedRepeatTime, setTouchedRepeatTime] = useState(false);
+
+  const [flashRepeatTime, setFlashRepeatTime] = useState(false);
+  const [flashDayOfWeek, setFlashDayOfWeek] = useState(false);
+  const [flashDayOfMonth, setFlashDayOfMonth] = useState(false);
+
   // 🆕 Scheduled date
   const [scheduledFor, setScheduledFor] = useState<string>("");
 
@@ -41,10 +49,14 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
 
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const tags = tagsInput
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+  const tags = Array.from(
+    new Set(
+      tagsInput
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
 
   useEffect(() => {
     titleInputRef.current?.focus();
@@ -55,6 +67,37 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
       localStorage.setItem("presetTags", JSON.stringify(presetTags));
     }
   }, [presetTags]);
+
+  useEffect(() => {
+    if (scheduledFor) {
+      const date = new Date(scheduledFor);
+
+      const newDayOfWeek = date.getDay();
+      const newDayOfMonth = date.getDate();
+      const newTime = `${String(date.getHours()).padStart(2, "0")}:${String(
+        date.getMinutes()
+      ).padStart(2, "0")}`;
+
+      // Only update + flash if changed
+      if (!touchedRepeatDayOfWeek && newDayOfWeek !== repeatDayOfWeek) {
+        setRepeatDayOfWeek(newDayOfWeek);
+        setFlashDayOfWeek(true);
+        setTimeout(() => setFlashDayOfWeek(false), 600);
+      }
+
+      if (!touchedRepeatDayOfMonth && newDayOfMonth !== repeatDayOfMonth) {
+        setRepeatDayOfMonth(newDayOfMonth);
+        setFlashDayOfMonth(true);
+        setTimeout(() => setFlashDayOfMonth(false), 600);
+      }
+
+      if (!touchedRepeatTime && newTime !== repeatTime) {
+        setRepeatTime(newTime);
+        setFlashRepeatTime(true);
+        setTimeout(() => setFlashRepeatTime(false), 600);
+      }
+    }
+  }, [scheduledFor]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -79,17 +122,23 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
       }
     }
 
+    const now = Date.now();
+    const scheduledDate = scheduledFor ? new Date(scheduledFor) : null;
+
     const newTodo: Todo = {
       id: uuidv4(),
       title: title.trim(),
-      createdAt: Date.now(),
-      durationMinutes: noTimeLimit ? null : duration,
+      createdAt:
+        scheduledDate && !noTimeLimit && duration
+          ? scheduledDate.getTime() - duration * 60_000
+          : now,
+      durationMinutes: !scheduledDate && !noTimeLimit ? duration : null,
       completed: false,
       expired: false,
       notified: false,
       tags,
-      ...(scheduledFor && {
-        scheduledFor: new Date(scheduledFor).toISOString(),
+      ...(scheduledDate && {
+        scheduledFor: scheduledDate.toISOString(),
       }),
       ...(repeat && { repeat }),
     };
@@ -235,8 +284,15 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
               <label className="block text-gray-500 text-sm">Day of Week</label>
               <select
                 value={repeatDayOfWeek}
-                onChange={(e) => setRepeatDayOfWeek(parseInt(e.target.value))}
-                className="w-full text-gray-500 p-2 border rounded"
+                onChange={(e) => {
+                  setRepeatDayOfWeek(parseInt(e.target.value));
+                  setTouchedRepeatDayOfWeek(true);
+                }}
+                className={`w-full p-2 border rounded transition-colors duration-300 ${
+                  flashDayOfWeek
+                    ? "bg-yellow-100 border-yellow-400"
+                    : "bg-white text-gray-500 border-gray-300"
+                }`}
               >
                 {[
                   "Sunday",
@@ -265,24 +321,67 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
                 min="1"
                 max="31"
                 value={repeatDayOfMonth}
-                onChange={(e) => setRepeatDayOfMonth(parseInt(e.target.value))}
-                className="w-full text-gray-500 p-2 border rounded"
+                onChange={(e) => {
+                  setRepeatDayOfMonth(parseInt(e.target.value));
+                  setTouchedRepeatDayOfMonth(true);
+                }}
+                className={`w-full p-2 border rounded transition-colors duration-300 ${
+                  flashDayOfMonth
+                    ? "bg-yellow-100 border-yellow-400"
+                    : "bg-white text-gray-500 border-gray-300"
+                }`}
               />
             </div>
           )}
 
           {repeatFrequency !== "none" && (
             <div>
-              <label className="block text-gray-500 text-sm">Time of Day</label>
+              <label
+                htmlFor="repeatTime"
+                className="block text-gray-500 text-sm"
+              >
+                Time of Day
+              </label>
               <input
                 type="time"
                 value={repeatTime}
-                onChange={(e) => setRepeatTime(e.target.value)}
-                className="w-full text-gray-500 p-2 border rounded"
+                onChange={(e) => {
+                  setRepeatTime(e.target.value);
+                  setTouchedRepeatTime(true);
+                }}
+                className={`w-full p-2 border rounded transition-colors duration-300 ${
+                  flashRepeatTime
+                    ? "bg-yellow-100 border-yellow-400"
+                    : "bg-white text-gray-500 border-gray-300"
+                }`}
               />
             </div>
           )}
         </div>
+        {repeatFrequency !== "none" && (
+          <div className="mt-4 p-2 bg-gray-100 rounded text-sm text-gray-700">
+            <strong>Repeats:</strong>{" "}
+            {repeatFrequency === "daily" && `Every day at ${repeatTime}`}
+            {repeatFrequency === "weekly" &&
+              `Every ${
+                [
+                  "Sunday",
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                ][repeatDayOfWeek]
+              } at ${repeatTime}`}
+            {repeatFrequency === "monthly" &&
+              `Every month on the ${repeatDayOfMonth}${
+                ["th", "st", "nd", "rd"][
+                  ((repeatDayOfMonth % 100) - 20) % 10
+                ] || "th"
+              } at ${repeatTime}`}
+          </div>
+        )}
 
         <div className="flex items-center mb-4">
           <input
@@ -300,7 +399,9 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
         {!noTimeLimit && (
           <>
             <label className="block mb-2 text-gray-700">
-              Reminder in (minutes):
+              {scheduledFor
+                ? "Remind me (minutes before scheduled time):"
+                : "Reminder in (minutes):"}
             </label>
             <select
               className="border text-gray-700 p-2 w-full mb-4 rounded"
