@@ -239,6 +239,9 @@ export default function TodoForm({ onSubmit, onClose }: Props) {
                   const trimmed = newPresetInput.trim();
                   if (trimmed && !presetTags.includes(trimmed)) {
                     setPresetTags([...presetTags, trimmed]);
+                    setTagsInput((prev) =>
+                      prev ? `${prev}, ${trimmed}` : trimmed
+                    );
                   }
                   setNewPresetInput("");
                 }}
